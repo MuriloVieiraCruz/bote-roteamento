@@ -7,9 +7,9 @@ spring:
   application:
     name: roteamento-api
   datasource:
-    url: jdbc:postgresql://localhost:5432/roteamento_db
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5432/botae-db
+    username: admin
+    password: admin
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,7 +21,7 @@ spring:
   security:
     user:
       name: admin
-      password: admin123
+      password: admin
   cache:
     type: caffeine
     caffeine:

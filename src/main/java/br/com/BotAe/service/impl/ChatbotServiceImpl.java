@@ -5,6 +5,7 @@ import br.com.BotAe.repository.ChatbotRepository;
 import br.com.BotAe.service.ChatbotService;
 import com.google.common.base.Preconditions;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,11 +15,10 @@ import java.util.Map;
 @Service
 public class ChatbotServiceImpl implements ChatbotService {
 
-    private final ChatbotServiceImpl self;
+    private ApplicationContext applicationContext;
     private final ChatbotRepository chatbotRepository;
 
-    public ChatbotServiceImpl(ChatbotServiceImpl self, ChatbotRepository chatbotRepository) {
-        this.self = self;
+    public ChatbotServiceImpl(ChatbotRepository chatbotRepository) {
         this.chatbotRepository = chatbotRepository;
     }
 
@@ -31,6 +31,7 @@ public class ChatbotServiceImpl implements ChatbotService {
 
     @Override
     public Chatbot atualizar(Chatbot chatbot) {
+        ChatbotService self = applicationContext.getBean(ChatbotService.class);
         self.buscarPorNumero(chatbot.getNumero());
 
         return chatbotRepository.save(chatbot);

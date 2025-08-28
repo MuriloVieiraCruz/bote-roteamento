@@ -1,5 +1,7 @@
 package br.com.BotAe.integration.routes;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -15,6 +17,8 @@ public class NodeJsRoute extends RouteBuilder {
 
     @Value("${nodejs.base-url:http://localhost:3030}")
     private String nodeJsBaseUrl;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void configure() {
@@ -39,14 +43,26 @@ public class NodeJsRoute extends RouteBuilder {
                         throw new IllegalArgumentException("Chatbot não pode estar vazio");
                     }
 
+                    String json = objectMapper.writeValueAsString(chatbot);
+
                     exchange.getIn().setHeader("Content-Type", "application/json");
                     exchange.getIn().setHeader(Exchange.HTTP_METHOD, "POST");
+                    exchange.getIn().setBody(json);
                 })
-                .marshal().json()
                 .log("Enviando requisição POST para Node.js...")
                 .to(nodeJsBaseUrl + "/api/chatbot")
                 .log("Chatbot inserido com sucesso no Node.js. Resposta: ${body}")
-                .unmarshal().json();
+                .process(exchange -> {
+                    String responseBody = exchange.getIn().getBody(String.class);
+                    if (responseBody != null && !responseBody.trim().isEmpty()) {
+                        try {
+                            Object response = objectMapper.readValue(responseBody, Object.class);
+                            exchange.getIn().setBody(response);
+                        } catch (Exception e) {
+                            exchange.getIn().setBody(responseBody);
+                        }
+                    }
+                });
 
         from("direct:nodejs-alterar")
                 .routeId("nodejs-atualizar-chatbot")
@@ -57,14 +73,26 @@ public class NodeJsRoute extends RouteBuilder {
                         throw new IllegalArgumentException("Chatbot não pode estar vazio");
                     }
 
+                    String json = objectMapper.writeValueAsString(chatbot);
+
                     exchange.getIn().setHeader("Content-Type", "application/json");
                     exchange.getIn().setHeader(Exchange.HTTP_METHOD, "PUT");
+                    exchange.getIn().setBody(json);
                 })
-                .marshal().json()
                 .log("Enviando requisição PUT para Node.js...")
                 .to(nodeJsBaseUrl + "/api/chatbot")
                 .log("Chatbot atualizado com sucesso no Node.js. Resposta: ${body}")
-                .unmarshal().json();
+                .process(exchange -> {
+                    String responseBody = exchange.getIn().getBody(String.class);
+                    if (responseBody != null && !responseBody.trim().isEmpty()) {
+                        try {
+                            Object response = objectMapper.readValue(responseBody, Object.class);
+                            exchange.getIn().setBody(response);
+                        } catch (Exception e) {
+                            exchange.getIn().setBody(responseBody);
+                        }
+                    }
+                });
 
         from("direct:nodejs-buscar")
                 .routeId("nodejs-buscar-chatbot")
@@ -82,7 +110,17 @@ public class NodeJsRoute extends RouteBuilder {
                 .log("Enviando requisição GET para Node.js...")
                 .toD(nodeJsBaseUrl + "/api/chatbot/${header.numero}")
                 .log("Chatbot encontrado no Node.js. Resposta: ${body}")
-                .unmarshal().json();
+                .process(exchange -> {
+                    String responseBody = exchange.getIn().getBody(String.class);
+                    if (responseBody != null && !responseBody.trim().isEmpty()) {
+                        try {
+                            Object response = objectMapper.readValue(responseBody, Object.class);
+                            exchange.getIn().setBody(response);
+                        } catch (Exception e) {
+                            exchange.getIn().setBody(responseBody);
+                        }
+                    }
+                });
 
         from("direct:nodejs-listar")
                 .routeId("nodejs-listar-chatbots")
@@ -101,15 +139,24 @@ public class NodeJsRoute extends RouteBuilder {
                 .log("Enviando requisição GET para listar chatbots...")
                 .to(nodeJsBaseUrl + "/api/chatbot")
                 .log("Lista de chatbots obtida do Node.js. Total: ${body}")
-                .unmarshal().json(List.class)
                 .process(exchange -> {
-                    @SuppressWarnings("unchecked")
-                    List<Object> chatbots = exchange.getIn().getBody(List.class);
+                    String responseBody = exchange.getIn().getBody(String.class);
+                    if (responseBody != null && !responseBody.trim().isEmpty()) {
+                        try {
+                            List<Object> chatbots = objectMapper.readValue(responseBody,
+                                    new TypeReference<List<Object>>() {});
 
-                    if (chatbots == null || chatbots.isEmpty()) {
-                        exchange.getIn().setBody(null);
+                            if (chatbots == null || chatbots.isEmpty()) {
+                                exchange.getIn().setBody(null);
+                            } else {
+                                exchange.getIn().setBody(chatbots);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Erro ao converter resposta JSON para lista: {}", e.getMessage());
+                            exchange.getIn().setBody(null);
+                        }
                     } else {
-                        exchange.getIn().setBody(chatbots);
+                        exchange.getIn().setBody(null);
                     }
                 });
 
@@ -129,14 +176,17 @@ public class NodeJsRoute extends RouteBuilder {
                         throw new IllegalArgumentException("Mensagem não pode estar vazia");
                     }
 
+                    String json = objectMapper.writeValueAsString(mensagem);
+
                     exchange.getIn().setHeader("Content-Type", "application/json");
                     exchange.getIn().setHeader(Exchange.HTTP_METHOD, "POST");
                     exchange.getIn().setHeader("numeroDestino", numero);
+                    exchange.getIn().setBody(json);
                 })
-                .marshal().json()
                 .log("Enviando mensagem para Node.js...")
                 .toD(nodeJsBaseUrl + "/api/chatbot/${header.numeroDestino}/enviar")
                 .log("Mensagem enviada com sucesso via Node.js. Resposta: ${body}");
+
     }
 }
 
