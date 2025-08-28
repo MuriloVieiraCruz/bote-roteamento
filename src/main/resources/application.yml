@@ -1,0 +1,62 @@
+server:
+  port: 8081
+  tomcat:
+    connection-timeout: 20000
+
+spring:
+  application:
+    name: roteamento-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/roteamento_db
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    user:
+      name: admin
+      password: admin123
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=300s
+
+jwt:
+  secret: ${JWT_SECRET:vdV297crhHXOj1qEB78iaq926jzth+a/klP/LV4Y1ql/PpVJ2FtYxvgWfPRCxPmu+wtyRt9jpso/PNSCUDJ+LQ==}
+  expiration: ${JWT_EXPIRATION:3600}
+
+nodejs:
+  base-url: ${NODEJS_BASE_URL:http://localhost:3030}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/chatbot-router.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
